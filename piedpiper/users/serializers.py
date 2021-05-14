@@ -1,9 +1,5 @@
 from rest_framework import serializers
 from rest_framework import exceptions
-import random
-from .models import User
-from .util import send_otp_mail
-
 
 from allauth.account import app_settings as allauth_settings
 from allauth.utils import email_address_exists
@@ -11,29 +7,21 @@ from allauth.account.adapter import get_adapter
 from allauth.account.utils import setup_user_email
 
 
-
-from rest_framework import serializers
-from .models import User
 from rest_auth.registration.serializers import RegisterSerializer
 from rest_auth.utils import import_callable
 from django.utils.translation import ugettext_lazy as _
 
-from django.contrib.auth import authenticate 
+from django.contrib.auth import authenticate
 from django.conf import settings
-# from django.contrib.auth import get_user_model
-# UserModel = get_user_model()
 
 
+from .models import User
 
-def randomDigits(digits):
-    lower = 10**(digits-1)
-    upper = 10**digits - 1
-    return random.randint(lower, upper)
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name',)
+        fields = ('id', 'email', 'first_name', 'last_name','full_name')
         read_only_fields = ('username', )
 
 
@@ -55,7 +43,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.ModelSerializer):
     """Login Serialization for first_token"""
     email = serializers.EmailField(write_only=True)
-    password  = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
@@ -63,20 +51,11 @@ class LoginSerializer(serializers.ModelSerializer):
 
     def _validate_user(self, email, password):
         user = None
-        print("I am here")
         if email and password:
             user = authenticate(email=email, password=password)
-            if not user:
-              raise exceptions.AuthenticationFailed('No such user') 
-            else:
-                
-                user.verification_code = randomDigits(6)
-                print("random_code", user.verification_code)
-                user.save()  
-                send_otp_mail(user)
-
         else:
             raise exceptions.ValidationError('email/password mismatch')
+        print("login serializer",user)    
         return user
 
     def validate(self, attrs):
@@ -135,7 +114,7 @@ class UserDetailsSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ()
+        fields = ['id','first_name','last_name','email']
 
 
 class JWTSerializer(serializers.Serializer):
@@ -155,4 +134,4 @@ class JWTSerializer(serializers.Serializer):
             rest_auth_serializers.get('USER_DETAILS_SERIALIZER', UserDetailsSerializer)
         )
         user_data = JWTUserDetailsSerializer(obj['user'], context=self.context).data
-        return user_data        
+        return user_data

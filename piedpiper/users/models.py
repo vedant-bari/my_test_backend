@@ -9,10 +9,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.db.models.signals import post_save
 from rest_framework.authtoken.models import Token
 from django.utils.translation import ugettext_lazy as _
-from django.core.validators import RegexValidator
-from django.core import validators
-from django.utils import timezone
-from .util import send_registration_mail
+
 
 class CustomUserManager(BaseUserManager):
     """
@@ -47,9 +44,8 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # username = None
     email = models.EmailField(_('email address'), unique=True)
-    verification_code = models.IntegerField(default="0")
+    
    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -58,9 +54,13 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+    @property
+    def full_name(self):
+        return "{} {}".format(self.first_name,self.last_name)    
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
-        send_registration_mail(instance)
+        

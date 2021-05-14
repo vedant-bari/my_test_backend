@@ -9,6 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class Common(Configuration):
 
     INSTALLED_APPS = (
+        'whitenoise.runserver_nostatic',
         'django.contrib.admin',
         'django.contrib.auth',
         'django.contrib.contenttypes',
@@ -26,6 +27,7 @@ class Common(Configuration):
         'corsheaders',
         # Your apps
         'piedpiper.users',
+        'piedpiper.tweet',
 
 
         ##restauth
@@ -41,6 +43,8 @@ class Common(Configuration):
     # https://docs.djangoproject.com/en/2.0/topics/http/middleware/
     MIDDLEWARE = (
         'django.middleware.security.SecurityMiddleware',
+        'whitenoise.middleware.WhiteNoiseMiddleware',
+        'spa.middleware.SPAMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'corsheaders.middleware.CorsMiddleware',
         'django.middleware.common.CommonMiddleware',
@@ -48,7 +52,7 @@ class Common(Configuration):
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',
+        
     )
     SITE_ID = 1
     ALLOWED_HOSTS = ["*"]
@@ -57,25 +61,23 @@ class Common(Configuration):
     SECRET_KEY = 'DJANGO_SECRET_KEY'
     WSGI_APPLICATION = 'piedpiper.wsgi.application'
 
-    ANYMAIL = {
-        # (exact settings here depend on your ESP...)
-        "MAILGUN_API_KEY": os.getenv('MAILGUN_API_KEY'),
-        "MAILGUN_SENDER_DOMAIN": os.getenv('MAIL_SENDER_DOMAIN'),  # your Mailgun domain, if needed
-    }
-    EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"  # or sendgrid.EmailBackend, or...
-    DEFAULT_FROM_EMAIL = "vedant.bari@live.com"  # if you don't already have this in settings
-    SERVER_EMAIL = DEFAULT_FROM_EMAIL
-
     ADMINS = (
         ('Author', 'vedantbari40@gmail.com'),
     )
 
-    # Postgres
+    # Postgres for docker
+    # DATABASES = {
+    #     'default': dj_database_url.config(
+    #         default=os.getenv('DATABASE_URL'),
+    #         conn_max_age=int(os.getenv('POSTGRES_CONN_MAX_AGE', 600))
+    #     )
+    # }
+
     DATABASES = {
-        'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL'),
-            conn_max_age=int(os.getenv('POSTGRES_CONN_MAX_AGE', 600))
-        )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'tweeter.db'),
+    }
     }
 
     # General
@@ -100,13 +102,8 @@ class Common(Configuration):
     REST_AUTH_SERIALIZERS = {
         'USER_DETAILS_SERIALIZER': 'piedpiper.users.serializers.UserDetailsSerializer',
         'JWT_SERIALIZER': 'piedpiper.users.serializers.JWTSerializer',
-
         'LOGIN_SERIALIZER': 'piedpiper.users.serializers.LoginSerializer',
-        #'LOGIN_SERIALIZER' : 'rest_auth.serializers.LoginSerializer',
-        #'JWT_SERIALIZER': 'piedpiper.users.serializers.JWTSerializer',
-        #'LOGIN_SERIALIZER': 'path.to.custom.LoginSerializer',
-        #'TOKEN_SERIALIZER': 'path.to.custom.TokenSerializer',
-        #...
+        
     }
 
     JWT_AUTH = {
@@ -129,7 +126,9 @@ class Common(Configuration):
         'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     )
 
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'spa.storage.SPAStaticFilesStorage'
+
+    # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     # Media files
     MEDIA_ROOT = join(os.path.dirname(BASE_DIR), 'media')
     MEDIA_URL = '/media/'
@@ -232,7 +231,7 @@ class Common(Configuration):
 
     # Django Rest Framework
     REST_FRAMEWORK = {
-        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'DEFAULT_PAGINATION_CLASS': None,
         'PAGE_SIZE': int(os.getenv('DJANGO_PAGINATION_LIMIT', 10)),
         'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S%z',
         'DEFAULT_RENDERER_CLASSES': (

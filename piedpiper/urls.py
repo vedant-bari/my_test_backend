@@ -2,14 +2,9 @@ from django.conf import settings
 from django.urls import path, re_path, include, reverse_lazy
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.views.generic.base import RedirectView
-from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken import views
-# from .users.views import UserViewSet, UserCreateViewSet
 
-# router = DefaultRouter()
-# router.register(r'users', UserViewSet)
-# router.register(r'users', UserCreateViewSet)
+from rest_framework.authtoken import views
+from django.views.generic.base import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -19,9 +14,10 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('rest-auth/', include('rest_auth.urls')),
     path('api/v1/user/', include('piedpiper.users.urls')),
+     path('api/v1/tweet/', include('piedpiper.tweet.urls')),
 
     # the 'api-root' from django rest-frameworks default router
     # http://www.django-rest-framework.org/api-guide/routers/#defaultrouter
-    re_path(r'^$', RedirectView.as_view(url=reverse_lazy('api-root'), permanent=False)),
+    re_path(r'^$',TemplateView.as_view(template_name='index.html'), name='home'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
